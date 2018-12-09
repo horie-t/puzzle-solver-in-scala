@@ -20,15 +20,17 @@ object Sudoku {
   val rows: String   = "ABCDEFGHI" // 行の名前はアルファベットで表記
   val cols: String   = digits      // 列の名前は数字で表記
   val cellNames: Seq[String] = cross(rows, cols) // 全てのセル名の並び
-  val allUnits: Seq[Seq[String]] = 
+  val allUnits: Seq[Seq[String]] =               // 全てのUnitの並び
     cols.map(c => cross(rows, c.toString)) ++
     rows.map(r => cross(r.toString, cols)) ++
     (for (rs <- rows.grouped(3); cs <- cols.grouped(3)) yield (cross(rs, cs)))
-  val unitMap: Map[String, Seq[Seq[String]]] = Map({
+  // セルと、セルを含むUnitリストの対応
+  val unitMap: Map[String, Seq[Seq[String]]] = Map({ 
     for {cellName <- cellNames
     } yield {(cellName, allUnits.filter(_.contains(cellName)))}
   }: _*)
-  val peerMap: Map[String, Set[String]] = Map({
+  // セルと、そのセルのPeerの対応
+  val peerMap: Map[String, Set[String]] = Map({ //
     for {cellName <- cellNames
     } yield {(cellName, Set(unitMap.getOrElse(cellName, Nil).flatten: _*) - cellName)}
   }: _*)
@@ -37,26 +39,27 @@ object Sudoku {
     * @param gridStr 盤面の文字列。盤面の数字を行優先で並べた文字列。空白は「.」か「0」の文字にする事。改行や区切り文字もOK
     * @return 盤面。セル名と、そのセルに入る可能性のある数字の文字列のマップ
     */
-  def parseGrid(gridStr: String): Option[Map[String, String]] = {
+  def parseGrid(gridStr: String): Map[String, String] = {
     /** 盤面に不要な文字を削除し、入力された盤面を返します。
       */
     def gridValues(grid: String): Map[String, String] = {
       val chars = grid.filter { c => digits.contains(c) || "0.".contains(c)}
+      if (chars.length != 81) throw new IllegalArgumentException("Invalid grid data: " + grid)
       Map(cellNames zip chars.split(""): _*)
     }
 
-     // 初期盤面
+     // 初期盤面(全てのセルに、0〜9までの数字が入る可能性がある)
     var grid: Map[String, String] =
       Map({for (cellName <- cellNames) yield ((cellName, digits))}: _*)
 
     for ((cellName, digit) <- gridValues(gridStr))
       if (digits.contains(digit))
         assign(grid, cellName, digit) match {
-          case None => return None
+          case None => throw new IllegalArgumentException("Illegal Grid Data.")
           case Some(assignedGrid) => grid = assignedGrid
         }
 
-    Some(grid)
+    grid
   }
 
   /** 指定されたマス目に指定された数字を割り当てます。
@@ -128,11 +131,51 @@ object Sudoku {
 
     Some(updateGrid)
   }
+
+  /** 解を探索します。
+    * @param 解く盤面
+    */
+  def search(gridOpt: Option[Map[String, String]]): Option[Map[String, String]] = 
+    gridOpt match {
+      case None => None
+      case Some(grid) =>
+        if (grid.forall(_._2.length == 1)) {
+          gridOpt // 解けた
+        } else {
+          // 確定していないマスの中で、一番確定状態に近いマスを探す
+          val (cellName, cellVal) = grid.filter(_._2.length > 1).minBy(_._2.length)
+          // 可能性のあるパターンを、バックトラックしながら探索する。
+          for (digit <- cellVal.split("")) {
+            val searchedGridOpt = search(assign(grid, cellName, digit))
+            if (!searchedGridOpt.isEmpty) return searchedGridOpt
+          }
+          None
+        }
+    }
+
+  /** 数独を解きます。
+    * @param gridStr 盤面の文字列。盤面の数字を行優先で並べた文字列。空白は「.」か「0」の文字にする事。改行や区切り文字もOK
+    */
+  def solve(gridStr: String): Option[Map[String, String]] = search(Some(parseGrid(gridStr)))
 }
 
+/** 数独を解くアプリケーション・クラスです。
+  */
 object SudokuApp {
   import Sudoku._
 
+  /** main関数。最初の引数に、問題のデータを与えます。
+    * 問題のデータは、行優先での数字の並びの文字列です。空白マスは、"0"または、"."です。それ以外の文字列は無視されます。
+    */
+  def main(args: Array[String]) =
+    solve(args(0)) match {
+      case None => println("Fail to solve.")
+      case Some(grid) => display(grid)
+    }
+
+  /** 盤面を表示します。
+    * @param grid 盤面
+    */
   def display(grid: Map[String, String]): Unit = {
     val (cellName, digits) = grid.maxBy(taple => taple._2.length)
     val cellWidth = 1 + digits.length // マス目の幅は、数字列に空白を加えたもの
@@ -145,6 +188,12 @@ object SudokuApp {
     }
   }
 
+  /** 文字列を指定された幅でセンタリングします。
+    * @param str センタリングしたい文字列
+    * @param width センタリングしたい領域の幅
+    * 
+    * @return 文字列の左右にセンタリングのための空白(" ")を追加します。
+    */
   def centerStr(str: String, width: Int): String = {
     if (str.length == width) {
       str
