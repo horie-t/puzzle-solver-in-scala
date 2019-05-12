@@ -66,16 +66,7 @@ object NumSkeletonApp {
                    |..*..
                    |*.**.
                    |*....""".stripMargin.split("\n").map(_.toCharArray())
-    val bones = Array(
-      Bone(Point(0, 0), 4, Col),
-      Bone(Point(4, 1), 4, Col),
-      Bone(Point(0, 0), 3, Row),
-      Bone(Point(0, 3), 3, Row),
-      Bone(Point(2, 1), 3, Row),
-      Bone(Point(2, 4), 3, Row),
-      Bone(Point(2, 0), 2, Col),
-      Bone(Point(2, 3), 2, Col)
-    )
+    val bones = calcBones(board)
     val nums = Map(
       (4 -> Array("1766", "7466").map(_.toCharArray())),
       (3 -> Array("176", "646", "711", "744").map(_.toCharArray())),
@@ -84,6 +75,54 @@ object NumSkeletonApp {
     solve(board, bones, nums) match {
       case None => println("Fail to solve.")
       case Some(b) => b.map(raw => println(raw.mkString))
+    }
+  }
+
+  def calcBones(board: Board) : Array[Bone] = {
+    var bones = Array[Bone]()
+    val width = board(0).size; val height = board.size
+    for (r <- 0 until height) {
+      for (c <- 0 until width) {
+        bones = bones ++ getBones(board, r, c)
+      }
+    }
+    bones
+  }
+
+  def getBones(board: Board, row: Int, col: Int): Array[Bone] = {
+    getBone(board, row, col, Col) ++ getBone(board, row, col, Row)
+  }
+
+  def getBone(board: Board, row: Int, col: Int, dir: Direction): Array[Bone] = {
+    if (board(row)(col) == '*') return Array[Bone]()
+
+    val width = board(0).size; val height = board.size
+    if (dir == Col) {
+      if (col != 0 && board(row)(col - 1) == '.'
+        || col == width - 1
+        || board(row)(col + 1) == '*') {
+        Array()
+      } else {
+        for (i <- 1 until width - col) {
+          if (board(row)(col + i) == '*') {
+            return Array(Bone(Point(row, col), i, Col))
+          }
+        }
+        Array(Bone(Point(row, col), width - col, Col))
+      }
+    } else {
+      if (row != 0 && board(row - 1)(col) == '.'
+        || row == height - 1
+        || board(row + 1)(col) == '*') {
+        Array()
+      } else {
+        for (i <- 1 until height - row) {
+          if (board(row + i)(col) == '*') {
+            return Array(Bone(Point(row, col), i, Row))
+          }
+        }
+        Array(Bone(Point(row, col), height - row, Row))
+      }
     }
   }
 }
