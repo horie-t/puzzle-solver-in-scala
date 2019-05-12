@@ -4,19 +4,28 @@ sealed trait Direction
 case object Raw extends Direction
 case object Col extends Direction
 
-case class Bone(row: Int, col: Int, dir: Direction)
+case class Point(row: Int, col: Int)
+case class Bone(p: Point, length: Int, dir: Direction)
 
 /** ナンバー・スケルトンを解く
   */
 object NumSkelton {
   /** 問題を解きます。
     * @param board 問題のボード。"."で空いているマスを、"*"で埋める必要のないマスを表します。
-    * @param bones 空白データのMap。keyは文字数、valueは空白データのリスト
+    * @param bones 空白データ
     * @param nums 埋める数字のMap。keyは文字数、valueは数字のリストのリスト
     */
-  def solve(board: Array[Array[Char]], bones: Map[Int, Array[Bone]],
+  def solve(board: Array[Array[Char]], bones: Array[Bone],
     nums: Map[Int, Array[Array[Char]]]): Option[Array[Array[Char]]] = {
-    Some(board)
+    if (bones.isEmpty) {
+      Some(board)
+    } else {
+      for (bone <- bones) {
+        val newBones = bones.filter(_ != bone)
+        solve(board, newBones, nums)
+      }
+      Some(board)
+    }
   }
 }
 
@@ -29,10 +38,15 @@ object NumSkeletonApp {
                    |..*..
                    |*.**.
                    |*....""".stripMargin.split("\n").map(_.toCharArray())
-    val bones = Map(
-      (4 -> Array(Bone(0, 0, Raw), Bone(4, 1, Raw))),
-      (3 -> Array(Bone(0, 0, Col), Bone(0, 3, Col), Bone(2, 1, Col), Bone(2, 4, Col))),
-      (2 -> Array(Bone(2, 0, Raw), Bone(2, 3, Raw)))
+    val bones = Array(
+      Bone(Point(0, 0), 4, Raw),
+      Bone(Point(4, 1), 4, Raw),
+      Bone(Point(0, 0), 3, Col),
+      Bone(Point(0, 3), 3, Col),
+      Bone(Point(2, 1), 3, Col),
+      Bone(Point(2, 4), 3, Col),
+      Bone(Point(2, 0), 2, Raw),
+      Bone(Point(2, 3), 2, Raw)
     )
     val nums = Map(
       (4 -> Array("1766", "7466").map(_.toCharArray())),
