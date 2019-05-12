@@ -62,16 +62,20 @@ object NumSkeletonApp {
   import NumSkelton._
 
   def main(args: Array[String]) {
-    val board = """|....*
-                   |.**.*
-                   |..*..
-                   |*.**.
-                   |*....""".stripMargin.split("\n").map(_.toCharArray())
+    val board = """|.....*...
+                   |.***...*.
+                   |.....*.*.
+                   |*.*.*....
+                   |*.*...*.*
+                   |....*.*.*
+                   |.*.*.....
+                   |.*...***.
+                   |...*.....""".stripMargin.split("\n").map(_.toCharArray())
     val bones = calcBones(board)
     val nums = Map(
-      (4 -> Array("1766", "7466").map(_.toCharArray())),
-      (3 -> Array("176", "646", "711", "744").map(_.toCharArray())),
-      (2 -> Array("47", "61").map(_.toCharArray()))
+      (5 -> Array("11994", "40449", "49114", "94491").map(_.toCharArray())),
+      (4 -> Array("1911", "1944", "2019", "2020", "2510", "4194", "4491", "5439", "9134", "9944").map(_.toCharArray())),
+      (3 -> Array("154", "255", "350", "451", "454", "455", "459", "555", "951").map(_.toCharArray()))
     )
     solve(board, bones, nums) match {
       case None => println("Fail to solve.")
