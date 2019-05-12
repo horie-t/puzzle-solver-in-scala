@@ -35,6 +35,7 @@ object NumSkelton {
           }
           if (!assignedBoard.isEmpty) return assignedBoard;
         }
+        return None
       }
       None
     }
